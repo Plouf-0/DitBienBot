@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, Events, GatewayIntentBits, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
+import { Client, Events, GatewayIntentBits, Partials, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 import {
   TARGET_EMOJI_ID,
   TARGET_EMOJI_KEY,
@@ -14,7 +14,14 @@ import {
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
+  ],
+  partials: [
+    Partials.Message,
+    Partials.Channel,
+    Partials.Reaction,
+    Partials.User,
   ],
 });
 
@@ -36,6 +43,16 @@ client.once(Events.ClientReady, (readyClient) => {
 
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
   if (user.bot) return;
+
+  if (reaction.partial) {
+    try {
+      await reaction.fetch();
+    } catch (err) {
+      console.error('Impossible de fetch la réaction partielle:', err);
+      return;
+    }
+  }
+
   if (!reaction.message.guildId) return;
 
   const emojiKey = normalizeEmojiKey(reaction.emoji);
@@ -55,6 +72,16 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 
 client.on(Events.MessageReactionRemove, async (reaction, user) => {
   if (user.bot) return;
+
+  if (reaction.partial) {
+    try {
+      await reaction.fetch();
+    } catch (err) {
+      console.error('Impossible de fetch la réaction partielle:', err);
+      return;
+    }
+  }
+
   if (!reaction.message.guildId) return;
 
   const emojiKey = normalizeEmojiKey(reaction.emoji);
@@ -115,7 +142,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     return;
   }
 
-  if (interaction.commandName === 'resetdnranking') {
+  if (interaction.commandName === 'resetdbranking') {
     await interaction.deferReply({ ephemeral: false });
 
     if (!interaction.guildId || !interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
