@@ -1,0 +1,18 @@
+services:
+  ditbienbot:
+    container_name: ditbienbot
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    # ports:
+    #   - "${PORT:-3000}:3006"
+    networks:
+      - traefik_network
+
+
+networks:
+  traefik_network:
+    external: true
