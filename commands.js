@@ -7,18 +7,6 @@ const commands = [
     description: 'Affiche le top 10 du nombre de <:DISBIEN:1535291511174991952> par utilisateur',
   },
   {
-    name: 'countreaction',
-    description: 'Compte uniquement les <:DISBIEN:1535291511174991952> sur un message précis',
-    options: [
-      {
-        name: 'message_id',
-        description: 'ID du message à vérifier',
-        type: 3,
-        required: true,
-      },
-    ],
-  },
-  {
     name: 'resetdnranking',
     description: 'Réinitialise le classement du bot pour cet emoji (admin uniquement)',
   },

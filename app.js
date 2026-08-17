@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Client, Events, GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
+import { Client, Events, GatewayIntentBits, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 import {
   TARGET_EMOJI_ID,
   TARGET_EMOJI_KEY,
@@ -77,69 +77,37 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === 'countreaction') {
-    await interaction.deferReply({ ephemeral: true });
-
-    const messageId = interaction.options.getString('message_id');
-
-    if (!messageId) {
-      await interaction.editReply({ content: 'Tu dois fournir un message_id.' });
-      return;
-    }
-
-    const channel = interaction.channel;
-    if (!channel || !channel.messages) {
-      await interaction.editReply({ content: 'Impossible de lire ce canal.' });
-      return;
-    }
-
-    try {
-      const message = await channel.messages.fetch(messageId);
-      const reaction = message.reactions.cache.find((entry) => normalizeEmojiKey(entry.emoji) === TARGET_EMOJI_KEY);
-      const total = reaction ? reaction.count : 0;
-
-      await interaction.editReply({
-        content: `Le bot compte uniquement <:DISBIEN:${TARGET_EMOJI_ID}>. Sur ce message, il a été utilisé ${total} fois.`,
-      });
-    } catch (error) {
-      console.error('Error counting reaction:', error);
-      await interaction.editReply({ content: 'Impossible de compter cette réaction sur ce message.' });
-    }
-
-    return;
-  }
-
   if (interaction.commandName === 'dbranking') {
     await interaction.deferReply({ ephemeral: false });
 
     try {
       console.log('[DBRANKING] command called by user=', interaction.user.id, 'guild=', interaction.guildId);
 
+      const medals = ['🥇', '🥈', '🥉'];
       const guildId = interaction.guildId;
       const userId = interaction.user.id;
       const ranking = getRankingByEmoji(guildId, TARGET_EMOJI_KEY, 10);
       const userStats = getUserRank(guildId, userId, TARGET_EMOJI_KEY);
 
-      console.log('[DBRANKING] ranking=', JSON.stringify(ranking));
-      console.log('[DBRANKING] userStats=', JSON.stringify(userStats));
+      const description = ranking.length
+        ? ranking.map((entry, index) => {
+          const prefix = medals[index] ?? `**${index + 1}.**`;
+          return `${prefix} <@${entry.user_id}> — **${entry.total}**`;
+        }).join('\n')
+        : 'Aucune donnée pour l\'instant.';
 
-      const lines = [`Top 10 <:DISBIEN:${TARGET_EMOJI_ID}>`];
+      const embed = new EmbedBuilder()
+        .setColor(0xD85A30)
+        .setTitle(`🏆 Classement <:DISBIEN:${TARGET_EMOJI_ID}>`)
+        .setDescription(description)
+        .setFooter({
+          text: userStats.rank
+            ? `Ton classement : #${userStats.rank} avec ${userStats.total} DISBIEN`
+            : 'Tu n\'es pas encore dans le classement',
+        })
+        .setTimestamp();
 
-      if (!ranking.length) {
-        lines.push('Aucune donnée pour l’instant.');
-      } else {
-        ranking.forEach((entry, index) => {
-          lines.push(`${index + 1}. <@${entry.user_id}> — ${entry.total}`);
-        });
-      }
-
-      if (userStats.rank) {
-        lines.push(`\nTon classement : #${userStats.rank} avec ${userStats.total} <:DISBIEN:${TARGET_EMOJI_ID}>`);
-      } else {
-        lines.push(`\nTon classement : pas encore dans le classement pour <:DISBIEN:${TARGET_EMOJI_ID}>`);
-      }
-
-      await interaction.editReply({ content: lines.join('\n'), allowedMentions: { parse: [] } });
+      await interaction.editReply({ embeds: [embed], allowedMentions: { parse: [] } });
     } catch (error) {
       console.error('Error in dbranking command:', error);
       await interaction.editReply({ content: 'Une erreur est survenue pendant le calcul du classement.' });
