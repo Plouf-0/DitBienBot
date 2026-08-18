@@ -53,21 +53,34 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     }
   }
 
+  if (reaction.message.partial) {
+    try {
+      await reaction.message.fetch();
+    } catch (err) {
+      console.error('Impossible de fetch le message partiel:', err);
+      return;
+    }
+  }
+
   if (!reaction.message.guildId) return;
 
+  const author = reaction.message.author;
+  if (!author || author.bot) return;
+  if (author.id === user.id) return;
+
   const emojiKey = normalizeEmojiKey(reaction.emoji);
-  console.log('[REACTION_ADD] user=', user.id, 'emoji=', reaction.emoji?.name ?? reaction.emoji?.id, 'key=', emojiKey, 'tracked=', isTrackedEmojiKey(emojiKey));
+  console.log('[REACTION_ADD] reactor=', user.id, 'author=', author.id, 'emoji=', reaction.emoji?.name ?? reaction.emoji?.id, 'key=', emojiKey, 'tracked=', isTrackedEmojiKey(emojiKey));
 
   if (!emojiKey || !isTrackedEmojiKey(emojiKey)) return;
 
   incrementReactionCount({
     guildId: reaction.message.guildId,
-    userId: user.id,
+    userId: author.id,
     emoji: emojiKey,
     delta: 1,
   });
 
-  console.log('[REACTION_ADD_DB] saved for guild=', reaction.message.guildId, 'user=', user.id, 'emoji=', emojiKey);
+  console.log('[REACTION_ADD_DB] saved for guild=', reaction.message.guildId, 'author=', author.id, 'emoji=', emojiKey);
 });
 
 client.on(Events.MessageReactionRemove, async (reaction, user) => {
@@ -82,21 +95,34 @@ client.on(Events.MessageReactionRemove, async (reaction, user) => {
     }
   }
 
+  if (reaction.message.partial) {
+    try {
+      await reaction.message.fetch();
+    } catch (err) {
+      console.error('Impossible de fetch le message partiel:', err);
+      return;
+    }
+  }
+
   if (!reaction.message.guildId) return;
 
+  const author = reaction.message.author;
+  if (!author || author.bot) return;
+  if (author.id === user.id) return;
+
   const emojiKey = normalizeEmojiKey(reaction.emoji);
-  console.log('[REACTION_REMOVE] user=', user.id, 'emoji=', reaction.emoji?.name ?? reaction.emoji?.id, 'key=', emojiKey, 'tracked=', isTrackedEmojiKey(emojiKey));
+  console.log('[REACTION_REMOVE] reactor=', user.id, 'author=', author.id, 'emoji=', reaction.emoji?.name ?? reaction.emoji?.id, 'key=', emojiKey, 'tracked=', isTrackedEmojiKey(emojiKey));
 
   if (!emojiKey || !isTrackedEmojiKey(emojiKey)) return;
 
   incrementReactionCount({
     guildId: reaction.message.guildId,
-    userId: user.id,
+    userId: author.id,
     emoji: emojiKey,
     delta: -1,
   });
 
-  console.log('[REACTION_REMOVE_DB] saved for guild=', reaction.message.guildId, 'user=', user.id, 'emoji=', emojiKey);
+  console.log('[REACTION_REMOVE_DB] saved for guild=', reaction.message.guildId, 'author=', author.id, 'emoji=', emojiKey);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
